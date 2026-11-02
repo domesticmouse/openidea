@@ -71,3 +71,25 @@ resolution, SMS/member completion, binary definition locations, preservation of
 unowned entries, reimport, API changes, publication despite javac failure,
 failed/skipped Kotlin target retention, deletion withdrawal and repair. Evidence
 and protocol transcripts are written to a printed temporary directory. Only the spawned JDT process is terminated.
+
+---
+
+## Overview
+App-owned dual JDT LS OSGi bundle and Maven lifecycle extension (`openidea-kotlin-bridge.jar`) that bridges compiled Kotlin `.class` and module metadata into JDT LS classpaths.
+
+## Interface
+- [build.py:root] — Reproducible build script (`python3 plugins/kotlin-bridge/build.py /path/to/jdtls /path/to/maven [--record-dependencies]`) compiling `src/` (`-21`) and `maven/` (`-8`) into `openidea-kotlin-bridge.jar`
+- [plugin.xml:openidea.kotlin.replace] — Registers `ai.openidea.kotlin.KotlinLibraries` on `org.eclipse.jdt.ls.core.delegateCommandHandler`
+- [components.xml:openidea-kotlin-output] — Registers `ai.openidea.kotlin.IsolatedOutput` as an `org.apache.maven.AbstractMavenLifecycleParticipant` Plexus component
+- [maven](./maven/README.md) - Java 8 source root for the Maven extension side of `openidea-kotlin-bridge.jar`.
+- [src](./src/README.md) - Java 21 source root for the JDT LS OSGi bundle side of `openidea-kotlin-bridge.jar`.
+
+## Invariants
+- [build.py:actual] — Refuses to build if the SHA-256 hashes of `jdt/plugins/*.jar` and `maven/lib/*.jar` differ from `build-dependencies.sha256` (unless `--record-dependencies` is passed)
+- [build.py:jar] — Uses sorted archive entries and fixed zip timestamps `(2026, 1, 1, 0, 0, 0)`, writing to `openidea-kotlin-bridge.jar.pending` before atomically replacing `openidea-kotlin-bridge.jar`
+
+## Side Effects
+- [build.py:staged] — Spawns the JDT batch compiler (`org.eclipse.jdt.internal.compiler.batch.Main`), optionally updates `build-dependencies.sha256`, and atomically writes `openidea-kotlin-bridge.jar`
+
+## Verification
+- Run: `JAVA_HOME=/path/to/project/jdk python3 plugins/kotlin-bridge/tests/verify.py /path/to/jdtls`

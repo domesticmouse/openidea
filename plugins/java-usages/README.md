@@ -140,3 +140,23 @@ with Lombok 1.18.48 and Java 25. It is not certified for every milestone.
 - Internal JDT APIs still require compatibility testing on updates; guarded native
   planning is intentionally limited to a verified implementation.
 - Packaged desktop/macOS WebKit and the user's own project require separate testing.
+
+---
+
+## Overview
+App-owned Eclipse JDT LS OSGi bundle (`openidea.java.usages`) and reproducible batch compiler build script (`build.py`) for semantic Java field/accessor usage classification.
+
+## Interface
+- [build.py:root] — Reproducible Python build script (`python3 plugins/java-usages/build.py /path/to/jdtls`) compiling `src/**/*.java` against JDT LS plugins with ECJ (`-21 -proc:none`) into `openidea-java-usages.jar`
+- [plugin.xml:openidea.java.usages] — Registers `ai.openidea.usages.UsagesCommand` on `org.eclipse.jdt.ls.core.delegateCommandHandler`
+- [src](./src/README.md) - Java source root containing the `ai.openidea.usages` OSGi bundle classes for semantic Java usage classification.
+
+## Invariants
+- [build.py:files] — Sorts all archive entries and writes deterministic zip timestamps `(2026, 1, 1, 0, 0, 0)` targeting Java 21 bytecode (`-21`)
+- [README.md:UsagesCommand] — Missing or failing extension commands fall back to standard LSP references in the Rust bridge without modifying global `includeAccessors` preferences
+
+## Side Effects
+- [build.py:jar] — Spawns `java ... org.eclipse.jdt.internal.compiler.batch.Main` in a temporary directory and writes `openidea-java-usages.jar` to `plugins/java-usages/openidea-java-usages.jar`
+
+## Verification
+- Run: `python3 plugins/java-usages/tests/verify.py /path/to/jdtls /path/to/lombok.jar`

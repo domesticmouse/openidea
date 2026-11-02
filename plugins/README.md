@@ -222,3 +222,24 @@ plugins/build.sh hello
 plugins/build.sh crates/ide-plugin/tests/fixtures/misbehave
 cargo test -p ide-plugin
 ```
+
+---
+
+## Overview
+OpenIDEA plugins subsystem containing the WebAssembly component build script (`build.sh`), sample WASI preview 2 plugins (`hello`), and app-owned JDT LS / Maven bridge bundles (`java-usages`, `kotlin-bridge`).
+
+## Interface
+- [build.sh:build] — Builds Rust plugins targeting `wasm32-wasip2` and copies `<plugin>/target/wasm32-wasip2/release/<crate>.wasm` to `<plugin>/dist/plugin.wasm`
+- [hello](./hello/README.md) - Package root for the sample `hello` WebAssembly plugin (`openidea-plugin-hello`), grouping its `plugin.toml` manifest, standalone `Cargo.toml`, and Rust guest source directory.
+- [java-usages](./java-usages/README.md) - App-owned Eclipse JDT LS OSGi bundle (`openidea.java.usages`) and reproducible batch compiler build script (`build.py`) for semantic Java field/accessor usage classification.
+- [kotlin-bridge](./kotlin-bridge/README.md) - App-owned dual JDT LS OSGi bundle and Maven lifecycle extension (`openidea-kotlin-bridge.jar`) that bridges compiled Kotlin `.class` and module metadata into JDT LS classpaths.
+
+## Invariants
+- [build.sh:build] — Ensures `wasm32-wasip2` target is installed via `rustup` and isolates each plugin build in `CARGO_TARGET_DIR="$dir/target"`
+- [README.md:Sandbox] — WASI preview 2 plugins run in isolated `wasmtime` stores bounded by fuel (~5e9 instructions/call), 5s wall-clock epoch interruption, and 256 MiB linear memory, with host operations gated by declared `plugin.toml` permissions (`project-read`, `editor-read`, `editor-write`)
+
+## Side Effects
+- [build.sh:build] — Invokes `rustup target add wasm32-wasip2` if missing, runs `cargo build --release --target wasm32-wasip2`, and writes `<plugin>/dist/plugin.wasm`
+
+## Verification
+- Run: `plugins/build.sh hello && cargo test -p ide-plugin`
